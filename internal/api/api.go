@@ -10,7 +10,7 @@ import (
 
 const (
 	BaseUrl = "https://api.spoonacular.com/recipes"
-	Key     = "e70bfeb0be7146aa951be98ce9083f08"
+	Key     = "baaadd57c0b04b8dbba77bf63d2e6adc"
 )
 
 type HttpClient struct {
@@ -20,11 +20,11 @@ type HttpClient struct {
 type Recipe struct {
 	Id                int
 	Title             string
-	MissedIngredients []Ingredient
-	UsedIngredients   []Ingredient
-	Calories          Nutrient
-	Proteins          Nutrient
-	Carbs             Nutrient
+	MissedIngredients []string
+	UsedIngredients   []string
+	Calories          float64
+	Proteins          float64
+	Carbs             float64
 }
 
 type RecipeInfo struct {
@@ -83,7 +83,7 @@ func (httpClient *HttpClient) GetRecipes(passedIngredients []string, maxNumberOf
 	if err != nil {
 		return nil, err
 	}
-	recipes := make([]Recipe, len(recipesInfo))
+	recipes := make([]Recipe, 0)
 	for _, recipesInfo := range recipesInfo {
 		nutritionList, err := httpClient.GetRecipeNutritionsInfo(recipesInfo.Id)
 		if err != nil {
@@ -92,18 +92,27 @@ func (httpClient *HttpClient) GetRecipes(passedIngredients []string, maxNumberOf
 		recipe := Recipe{
 			Id:                recipesInfo.Id,
 			Title:             recipesInfo.Title,
-			MissedIngredients: recipesInfo.MissedIngredients,
-			UsedIngredients:   recipesInfo.UsedIngredients,
+			MissedIngredients: FormatToString(recipesInfo.MissedIngredients),
+			UsedIngredients:   FormatToString(recipesInfo.UsedIngredients),
 			Calories:          nutritionList[0],
 			Proteins:          nutritionList[1],
 			Carbs:             nutritionList[2],
 		}
+
 		recipes = append(recipes, recipe)
 	}
 	return recipes, nil
 }
 
-func (httpClient *HttpClient) GetRecipeNutritionsInfo(recipeId int) ([]Nutrient, error) {
+func FormatToString(ingredients []Ingredient) []string {
+	var toReturn []string
+	for _, i := range ingredients {
+		toReturn = append(toReturn, i.Name)
+	}
+	return toReturn
+}
+
+func (httpClient *HttpClient) GetRecipeNutritionsInfo(recipeId int) ([]float64, error) {
 	//fmt.Println(recipeId)
 	endpoint := fmt.Sprintf("%s/%d/information", BaseUrl, recipeId)
 	params := url.Values{}
@@ -127,19 +136,16 @@ func (httpClient *HttpClient) GetRecipeNutritionsInfo(recipeId int) ([]Nutrient,
 		return nil, err
 	}
 
-	var calories, proteins, carbs Nutrient
+	var calories, proteins, carbs float64
 	for _, nutrient := range nutritionsList.Nutrition.Nutrients {
 		switch nutrient.Name {
 		case "Calories":
-			calories.Name = "Calories"
-			calories.Amount = nutrient.Amount
+			calories = nutrient.Amount
 		case "Protein":
-			proteins.Name = "Proteins"
-			proteins.Amount = nutrient.Amount
+			proteins = nutrient.Amount
 		case "Carbohydrates":
-			carbs.Name = "Carbs"
-			carbs.Amount = nutrient.Amount
+			carbs = nutrient.Amount
 		}
 	}
-	return []Nutrient{calories, proteins, carbs}, nil
+	return []float64{calories, proteins, carbs}, nil
 }

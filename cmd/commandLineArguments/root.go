@@ -2,11 +2,14 @@ package commandlinearguments
 
 import (
 	"fmt"
-	"os"
-
+	"github.com/aleksandragoryczka/recipeFinder/internal/recipe"
 	"github.com/spf13/cobra"
+	"os"
+	"strings"
 )
 
+var ingredients string
+var numberOfRecipes int
 var rootCmd = &cobra.Command{
 	Use:   "recipeFinder",
 	Short: "recipeFinder - program generating meals from ingredients in your fridge",
@@ -15,8 +18,31 @@ var rootCmd = &cobra.Command{
 			that can be prepared from ingredients in your fridge 
 			with minimal number of missing ingredients`,
 	Run: func(cmd *cobra.Command, args []string) {
-
+		i := strings.Split(ingredients, ",")
+		recipeService, _ := recipe.NewService()
+		//fmt.Println(recipeService, i)
+		recipes, _ := recipeService.FindRecipeByIngredients(i, numberOfRecipes)
+		//fmt.Println(recipes)
+		for _, recipe := range recipes {
+			//fmt.Println(recipe.Title)
+			fmt.Printf("Name: %s\n", recipe.Title)
+			fmt.Printf("Used Ingredients: %s\n", strings.Join(recipe.UsedIngredients, ", "))
+			fmt.Printf("Missed Ingredients: %s\n", strings.Join(recipe.MissedIngredients, ", "))
+			fmt.Printf("Calories: %.2f\n", recipe.Calories)
+			fmt.Printf("Proteins: %.2f\n", recipe.Proteins)
+			fmt.Printf("Carbs: %.2f\n", recipe.Carbs)
+			fmt.Println(strings.Repeat("-", 70) + "\n")
+		}
 	},
+}
+
+func init() {
+	rootCmd.Flags().StringVar(&ingredients, "ingredients", "", "Ingredients list")
+	rootCmd.Flags().IntVar(&numberOfRecipes, "numberOfRecipes", 5, "Number of recipes")
+	err := rootCmd.MarkFlagRequired("ingredients")
+	if err != nil {
+		return
+	}
 }
 
 func Execute() {
@@ -24,4 +50,5 @@ func Execute() {
 		fmt.Println(os.Stderr, "Error while executing your CLI: '%s", err)
 		os.Exit(1)
 	}
+
 }
