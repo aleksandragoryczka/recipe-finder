@@ -1,6 +1,7 @@
 package recipe
 
 import (
+	"fmt"
 	"github.com/aleksandragoryczka/recipeFinder/internal/api"
 	"github.com/aleksandragoryczka/recipeFinder/internal/database"
 )
@@ -9,27 +10,35 @@ type Service struct {
 	db *database.Database
 }
 
-func NewService() (*Service, error) {
+func NewService() *Service {
 	db, _ := database.NewDatabase()
-	return &Service{db: db}, nil
+	return &Service{db: db}
 }
 
-func (s *Service) FindRecipeByIngredients(ingredients []string, numberOfRecipes int) ([]api.Recipe, error) {
+func (s *Service) FindRecipeByIngredients(ingredients []string, numberOfRecipes int) []api.Recipe {
 	recipes, err := s.db.GetRecipeByIngredientsList(ingredients, numberOfRecipes)
-	if err == nil && len(recipes) == numberOfRecipes {
-		return recipes, nil
-	} else if err == nil {
-		hc := api.NewHttpClinet()
-		recipes, err := hc.GetRecipes(ingredients, numberOfRecipes-len(recipes))
+	if err == nil && len(recipes) > 0 {
+		err := s.db.CloseDatabaseConnection()
 		if err != nil {
-			return nil, err
+			fmt.Println("Error closing DB connection: ", err)
 		}
-		//k := database.StringRecipe(recipes)
-		return recipes, nil
+		return recipes
+	} else if err == nil {
+		hc := api.NewHttpClient()
+		recipes := hc.GetRecipes(ingredients, numberOfRecipes)
+		if err != nil {
+			fmt.Println("Error gettingRecipes from API: ", err)
+			return nil
+		}
+		s.db.InsertTransaction(recipes)
+		err := s.db.CloseDatabaseConnection()
+		if err != nil {
+			fmt.Println("Error closing DB connection: ", err)
+		}
+		return recipes
 
+	} else {
+		fmt.Println("Error in FindRecipeByIngredients: ", err)
 	}
-	return nil, nil
-
-	//fmt.Println("hot:", recipes)
-
+	return nil
 }

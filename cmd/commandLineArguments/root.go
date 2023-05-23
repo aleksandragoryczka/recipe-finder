@@ -19,12 +19,10 @@ var rootCmd = &cobra.Command{
 			with minimal number of missing ingredients`,
 	Run: func(cmd *cobra.Command, args []string) {
 		i := strings.Split(ingredients, ",")
-		recipeService, _ := recipe.NewService()
-		//fmt.Println(recipeService, i)
-		recipes, _ := recipeService.FindRecipeByIngredients(i, numberOfRecipes)
-		//fmt.Println(recipes)
+		recipeService := recipe.NewService()
+
+		recipes := recipeService.FindRecipeByIngredients(i, numberOfRecipes)
 		for _, recipe := range recipes {
-			//fmt.Println(recipe.Title)
 			fmt.Printf("Name: %s\n", recipe.Title)
 			fmt.Printf("Used Ingredients: %s\n", strings.Join(recipe.UsedIngredients, ", "))
 			fmt.Printf("Missed Ingredients: %s\n", strings.Join(recipe.MissedIngredients, ", "))

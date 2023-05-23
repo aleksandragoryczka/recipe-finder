@@ -10,7 +10,7 @@ import (
 
 const (
 	BaseUrl = "https://api.spoonacular.com/recipes"
-	Key     = "baaadd57c0b04b8dbba77bf63d2e6adc"
+	Key     = "bcf41a075501468eba0ce6ec16dd5317"
 )
 
 type HttpClient struct {
@@ -39,25 +39,21 @@ type Ingredient struct {
 }
 
 type NutritionList struct {
-	Nutrition Nutrition `json:"nutrition"`
+	Nutrition struct {
+		Nutrients []struct {
+			Name   string  `json:"name"`
+			Amount float64 `json:"amount"`
+		} `json:"nutrients"`
+	} `json:"nutrition"`
 }
 
-type Nutrient struct {
-	Name   string  `json:"name"`
-	Amount float64 `json:"amount"`
-}
-
-type Nutrition struct {
-	Nutrients []Nutrient `json:"nutrients"`
-}
-
-func NewHttpClinet() *HttpClient {
+func NewHttpClient() *HttpClient {
 	return &HttpClient{
 		httpClient: &http.Client{},
 	}
 }
 
-func (httpClient *HttpClient) GetRecipes(passedIngredients []string, maxNumberOfRecipes int) ([]Recipe, error) {
+func (httpClient *HttpClient) GetRecipes(passedIngredients []string, maxNumberOfRecipes int) []Recipe {
 	endpoint := fmt.Sprintf("%s/findByIngredients", BaseUrl)
 	params := url.Values{}
 	params.Set("apiKey", Key)
@@ -67,13 +63,14 @@ func (httpClient *HttpClient) GetRecipes(passedIngredients []string, maxNumberOf
 	unescapedUri, _ := url.QueryUnescape(uri)
 	request, err := http.NewRequest(http.MethodGet, unescapedUri, nil)
 	if err != nil {
-		return nil, err
+		fmt.Println("Error creating new HTTP request: ", err)
+		return nil
 	}
 
 	request.Header.Set("Content-Type", "application/json")
 	resp, err := httpClient.httpClient.Do(request)
 	if err != nil {
-		return nil, err
+		return nil
 	}
 	defer resp.Body.Close()
 
@@ -81,13 +78,13 @@ func (httpClient *HttpClient) GetRecipes(passedIngredients []string, maxNumberOf
 
 	err = json.NewDecoder(resp.Body).Decode(&recipesInfo)
 	if err != nil {
-		return nil, err
+		return nil
 	}
 	recipes := make([]Recipe, 0)
 	for _, recipesInfo := range recipesInfo {
 		nutritionList, err := httpClient.GetRecipeNutritionsInfo(recipesInfo.Id)
 		if err != nil {
-			return nil, err
+			return nil
 		}
 		recipe := Recipe{
 			Id:                recipesInfo.Id,
@@ -98,18 +95,17 @@ func (httpClient *HttpClient) GetRecipes(passedIngredients []string, maxNumberOf
 			Proteins:          nutritionList[1],
 			Carbs:             nutritionList[2],
 		}
-
 		recipes = append(recipes, recipe)
 	}
-	return recipes, nil
+	return recipes
 }
 
 func FormatToString(ingredients []Ingredient) []string {
-	var toReturn []string
+	var s []string
 	for _, i := range ingredients {
-		toReturn = append(toReturn, i.Name)
+		s = append(s, i.Name)
 	}
-	return toReturn
+	return s
 }
 
 func (httpClient *HttpClient) GetRecipeNutritionsInfo(recipeId int) ([]float64, error) {
