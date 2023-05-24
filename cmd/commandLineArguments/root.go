@@ -29,7 +29,7 @@ var rootCmd = &cobra.Command{
 		for _, recipe := range recipes {
 			fmt.Printf("Name: %s\n", recipe.Title)
 			fmt.Printf("Used Ingredients: %s\n", strings.Join(recipe.UsedIngredients, ", "))
-			fmt.Printf("Missed Ingredients: %s\n", strings.Join(recipe.MissedIngredients, ", "))
+			fmt.Printf("Missing Ingredients: %s\n", strings.Join(recipe.MissedIngredients, ", "))
 			fmt.Printf("Calories: %.2f\n", recipe.Calories)
 			fmt.Printf("Proteins: %.2f\n", recipe.Proteins)
 			fmt.Printf("Carbs: %.2f\n", recipe.Carbs)

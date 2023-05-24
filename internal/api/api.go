@@ -10,7 +10,7 @@ import (
 
 const (
 	BaseUrl = "https://api.spoonacular.com/recipes"
-	Key     = "bcf41a075501468eba0ce6ec16dd5317"
+	Key     = "00bd5e919c8f4fe6851a3190b300970a"
 )
 
 type HttpClient struct {
@@ -18,7 +18,6 @@ type HttpClient struct {
 }
 
 type Recipe struct {
-	Id                int
 	Title             string
 	MissedIngredients []string
 	UsedIngredients   []string
@@ -58,7 +57,6 @@ func (httpClient *HttpClient) GetRecipes(passedIngredients string, maxNumberOfRe
 	params := url.Values{}
 	params.Set("apiKey", Key)
 	params.Set("ingredients", strings.ReplaceAll(passedIngredients, ",", ",+"))
-	//params.Set("ingredients", strings.Join(passedIngredients, ",+"))
 	params.Set("number", fmt.Sprintf("%v", maxNumberOfRecipes))
 	uri := fmt.Sprintf("%s?%s", endpoint, params.Encode())
 	unescapedUri, _ := url.QueryUnescape(uri)
@@ -88,7 +86,6 @@ func (httpClient *HttpClient) GetRecipes(passedIngredients string, maxNumberOfRe
 			return nil
 		}
 		recipe := Recipe{
-			Id:                recipesInfo.Id,
 			Title:             recipesInfo.Title,
 			MissedIngredients: FormatToString(recipesInfo.MissedIngredients),
 			UsedIngredients:   FormatToString(recipesInfo.UsedIngredients),
