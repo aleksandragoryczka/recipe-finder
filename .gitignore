@@ -1,4 +1,5 @@
 # ignore ALL files in ANY directory named screenshots and ./idea
 screenshots/
 ./idea
+./.idea/
 ./recipeFinder
