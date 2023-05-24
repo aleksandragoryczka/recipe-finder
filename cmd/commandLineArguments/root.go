@@ -5,6 +5,7 @@ import (
 	"github.com/aleksandragoryczka/recipeFinder/internal/recipe"
 	"github.com/spf13/cobra"
 	"os"
+	"sort"
 	"strings"
 )
 
@@ -19,9 +20,12 @@ var rootCmd = &cobra.Command{
 			with minimal number of missing ingredients`,
 	Run: func(cmd *cobra.Command, args []string) {
 		i := strings.Split(ingredients, ",")
+		sort.Strings(i)
+		inputIngredients := strings.Join(i[:], ",")
+
 		recipeService := recipe.NewService()
 
-		recipes := recipeService.FindRecipeByIngredients(i, numberOfRecipes)
+		recipes := recipeService.FindRecipeByIngredients(inputIngredients, numberOfRecipes)
 		for _, recipe := range recipes {
 			fmt.Printf("Name: %s\n", recipe.Title)
 			fmt.Printf("Used Ingredients: %s\n", strings.Join(recipe.UsedIngredients, ", "))

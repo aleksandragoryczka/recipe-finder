@@ -6,6 +6,7 @@ import (
 	"github.com/aleksandragoryczka/recipeFinder/internal/api"
 	"github.com/lib/pq"
 	_ "github.com/lib/pq"
+	"strings"
 )
 
 const (
@@ -44,58 +45,35 @@ func NewDatabase() (*Database, error) {
             title VARCHAR(255),
             calories REAL,
             proteins REAL,
-            carbs REAL);`)
+            carbs REAL,
+    		used_ingredients VARCHAR(500),
+    		missing_ingredients VARCHAR(500),
+    		input_ingredients VARCHAR(255));`)
 	if err != nil {
 		fmt.Println("Error creating recipes table: ", err)
-		return nil, nil
-	}
-	_, err = db.Query(`CREATE TABLE IF NOT EXISTS used_ingredients (
-            id SERIAL PRIMARY KEY,
-            key_f INT,
-            used_ingredient VARCHAR(255),
-            FOREIGN KEY (key_f) REFERENCES recipes (id) ON DELETE CASCADE
-        );`)
-	if err != nil {
-		fmt.Println("Error creating used_ingredients table: ", err)
-		return nil, nil
-	}
-	_, err = db.Query(`CREATE TABLE IF NOT EXISTS missing_ingredients (
-            id SERIAL PRIMARY KEY,
-            key_f INT,
-            missing_ingredient VARCHAR(255),
-            FOREIGN KEY (key_f) REFERENCES recipes (id) ON DELETE CASCADE
-        );`)
-	if err != nil {
-		fmt.Println("Error creating missing_ingredients table: ", err)
 		return nil, nil
 	}
 
 	return &Database{db: db}, nil
 }
 
-func (db *Database) GetRecipeByIngredientsList(ingredients []string, numberOfRecipes int) ([]api.Recipe, error) {
+func (db *Database) GetRecipeByIngredientsList(ingredients string, numberOfRecipes int) ([]api.Recipe, error) {
 	q := `SELECT
     	r.id_recipe,
         r.title,
-        ARRAY_AGG(DISTINCT ui.used_ingredient) AS used_ingredients,
-        ARRAY_AGG(DISTINCT mi.missing_ingredient) AS missing_ingredients,
+        STRING_TO_ARRAY(r.used_ingredients, ',') AS used_ingredients,
+        STRING_TO_ARRAY(r.missing_ingredients, ',') AS missing_ingredients,
         r.calories,
         r.proteins,
         r.carbs
       FROM
         recipes r
-      JOIN
-        used_ingredients ui ON r.id = ui.key_f
-      JOIN
-        missing_ingredients mi ON r.id = mi.key_f
       WHERE
-        ui.used_ingredient = ANY($1)
-      GROUP BY
-        r.id
+          r.input_ingredients = $1
       LIMIT
         $2;`
 
-	rows, err := db.db.Query(q, pq.Array(ingredients), numberOfRecipes)
+	rows, err := db.db.Query(q, ingredients, numberOfRecipes)
 	if err != nil {
 		fmt.Println(err)
 		return nil, nil
@@ -114,7 +92,6 @@ func (db *Database) GetRecipeByIngredientsList(ingredients []string, numberOfRec
 			&recipe.Proteins,
 			&recipe.Carbs,
 		)
-		fmt.Println(recipe.Id)
 		if err != nil {
 			fmt.Println(err)
 			return nil, err
@@ -129,14 +106,14 @@ func (db *Database) GetRecipeByIngredientsList(ingredients []string, numberOfRec
 	return recipes, nil
 }
 
-func (db *Database) InsertTransaction(recipes []api.Recipe) {
+func (db *Database) InsertTransaction(recipes []api.Recipe, inputIngredients string) {
 	tx, err := db.db.Begin()
 	if err != nil {
 		fmt.Println("Error beginning transaction: ", err)
 	}
 
 	for _, recipe := range recipes {
-		err := db.InsertRecipe(recipe)
+		err := db.InsertRecipe(recipe, inputIngredients)
 		if err != nil {
 			fmt.Println("Error inserting single Recipe in db: ", err)
 			tx.Rollback()
@@ -150,33 +127,17 @@ func (db *Database) InsertTransaction(recipes []api.Recipe) {
 	}
 }
 
-func (db *Database) InsertRecipe(recipe api.Recipe) error {
+func (db *Database) InsertRecipe(recipe api.Recipe, inputIngredients string) error {
 
-	var id int
-	err := db.db.QueryRow(`INSERT INTO recipes (id_recipe, title, calories, proteins, carbs) 
-							VALUES ($1, $2, $3, $4, $5) RETURNING id`,
-		recipe.Id, recipe.Title, recipe.Calories, recipe.Proteins, recipe.Carbs).Scan(&id)
+	_, err := db.db.Query(`INSERT INTO recipes (id_recipe, title, calories, proteins, carbs, 
+                     		used_ingredients, missing_ingredients, input_ingredients) 
+							VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+		recipe.Id, recipe.Title, recipe.Calories, recipe.Proteins, recipe.Carbs,
+		strings.Join(recipe.UsedIngredients, ","), strings.Join(recipe.MissedIngredients, ","),
+		inputIngredients)
 	if err != nil {
 		fmt.Println("Error inserting row into recipes: ", err)
 		return nil
-	}
-
-	for _, usedIngredient := range recipe.UsedIngredients {
-		_, err = db.db.Exec("INSERT INTO used_ingredients (key_f, used_ingredient) VALUES ($1, $2)",
-			id, usedIngredient)
-		if err != nil {
-			fmt.Println("Error inserting row into used_ingredients: ", err)
-			return nil
-		}
-	}
-
-	for _, missingIngredient := range recipe.MissedIngredients {
-		_, err = db.db.Exec("INSERT INTO missing_ingredients (key_f, missing_ingredient) VALUES ($1, $2)",
-			id, missingIngredient)
-		if err != nil {
-			fmt.Println("Error inserting row into missing_ingredients: ", err)
-			return nil
-		}
 	}
 	return nil
 }

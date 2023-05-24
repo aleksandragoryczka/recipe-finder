@@ -53,11 +53,12 @@ func NewHttpClient() *HttpClient {
 	}
 }
 
-func (httpClient *HttpClient) GetRecipes(passedIngredients []string, maxNumberOfRecipes int) []Recipe {
+func (httpClient *HttpClient) GetRecipes(passedIngredients string, maxNumberOfRecipes int) []Recipe {
 	endpoint := fmt.Sprintf("%s/findByIngredients", BaseUrl)
 	params := url.Values{}
 	params.Set("apiKey", Key)
-	params.Set("ingredients", strings.Join(passedIngredients, ",+"))
+	params.Set("ingredients", strings.ReplaceAll(passedIngredients, ",", ",+"))
+	//params.Set("ingredients", strings.Join(passedIngredients, ",+"))
 	params.Set("number", fmt.Sprintf("%v", maxNumberOfRecipes))
 	uri := fmt.Sprintf("%s?%s", endpoint, params.Encode())
 	unescapedUri, _ := url.QueryUnescape(uri)
@@ -109,7 +110,6 @@ func FormatToString(ingredients []Ingredient) []string {
 }
 
 func (httpClient *HttpClient) GetRecipeNutritionsInfo(recipeId int) ([]float64, error) {
-	//fmt.Println(recipeId)
 	endpoint := fmt.Sprintf("%s/%d/information", BaseUrl, recipeId)
 	params := url.Values{}
 	params.Set("apiKey", Key)

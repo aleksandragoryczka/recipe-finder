@@ -15,8 +15,8 @@ func NewService() *Service {
 	return &Service{db: db}
 }
 
-func (s *Service) FindRecipeByIngredients(ingredients []string, numberOfRecipes int) []api.Recipe {
-	recipes, err := s.db.GetRecipeByIngredientsList(ingredients, numberOfRecipes)
+func (s *Service) FindRecipeByIngredients(inputIngredients string, numberOfRecipes int) []api.Recipe {
+	recipes, err := s.db.GetRecipeByIngredientsList(inputIngredients, numberOfRecipes)
 	if err == nil && len(recipes) > 0 {
 		err := s.db.CloseDatabaseConnection()
 		if err != nil {
@@ -25,12 +25,12 @@ func (s *Service) FindRecipeByIngredients(ingredients []string, numberOfRecipes 
 		return recipes
 	} else if err == nil {
 		hc := api.NewHttpClient()
-		recipes := hc.GetRecipes(ingredients, numberOfRecipes)
+		recipes := hc.GetRecipes(inputIngredients, numberOfRecipes)
 		if err != nil {
 			fmt.Println("Error gettingRecipes from API: ", err)
 			return nil
 		}
-		s.db.InsertTransaction(recipes)
+		s.db.InsertTransaction(recipes, inputIngredients)
 		err := s.db.CloseDatabaseConnection()
 		if err != nil {
 			fmt.Println("Error closing DB connection: ", err)
