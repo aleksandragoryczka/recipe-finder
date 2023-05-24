@@ -1,2 +1,3 @@
-# ignore ALL files in ANY directory named screenshots
+# ignore ALL files in ANY directory named screenshots and ./idea
 screenshots/
+./idea
