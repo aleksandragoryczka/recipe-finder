@@ -42,14 +42,14 @@ recipeFinder
 |        |___main.go
 |
 |___intenal
-    |___api
-    |   |___api.go
-    |
-    |___database
-    |    |___database.go
-    |
-    |___recipe
-        |___recipeService.go
+     |___api
+     |   |___api.go
+     |
+     |___database
+     |   |___database.go
+     |
+     |___recipe
+         |___recipeService.go
 ```
 
 
@@ -70,9 +70,15 @@ User runs program with proper flags.
 
 Program checks if recipes with same input ingredients list are already in database. 
 
-If yes - user receives records from database.
+If yes and number of recipes existing in database is enough to retrieve them to user - user receives all records from 
+database.
 
-If not - programs sends requests to API and saves recipes to database for future use.
+If there are some recipes with input ingredients in database, but user need more - existing ones are being retrieved 
+from database. Difference between value in `numberOfRecipe` flag and count of records from database, is being get from
+API and these records are also saved in database for further usage.
+
+If in database there are not any records with input ingredients list - programs sends requests to API, gets all
+recipes from API and saves recipes to database for future use.
 
 As an output he received formatted list of recipes including their names, used ingredients, missing ingredients, 
 calories, proteins and carbs.

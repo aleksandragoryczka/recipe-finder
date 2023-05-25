@@ -52,7 +52,7 @@ func NewHttpClient() *HttpClient {
 	}
 }
 
-func (httpClient *HttpClient) GetRecipes(passedIngredients string, maxNumberOfRecipes int) []Recipe {
+func (httpClient *HttpClient) GetRecipes(passedIngredients string, maxNumberOfRecipes int, recipesInDbNumber int) []Recipe {
 	endpoint := fmt.Sprintf("%s/findByIngredients", BaseUrl)
 	params := url.Values{}
 	params.Set("apiKey", Key)
@@ -80,7 +80,7 @@ func (httpClient *HttpClient) GetRecipes(passedIngredients string, maxNumberOfRe
 		return nil
 	}
 	recipes := make([]Recipe, 0)
-	for _, recipesInfo := range recipesInfo {
+	for _, recipesInfo := range recipesInfo[recipesInDbNumber:] {
 		nutritionList, err := httpClient.GetRecipeNutritionsInfo(recipesInfo.Id)
 		if err != nil {
 			return nil
