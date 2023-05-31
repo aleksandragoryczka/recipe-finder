@@ -134,7 +134,7 @@ func (db *Database) InsertRecipe(recipe api.Recipe, inputIngredients string) err
 		inputIngredients)
 	if err != nil {
 		fmt.Println("Error inserting row into recipes: ", err)
-		return nil
+		return err
 	}
 	return nil
 }
